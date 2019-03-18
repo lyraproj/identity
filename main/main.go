@@ -1,8 +1,6 @@
 package main
 
-import (
-	"github.com/lyraproj/lyra/cmd/goplugin-identity/identity"
-)
+import "github.com/lyraproj/identity/identity"
 
 func main() {
 	identity.Start("identity.db")
