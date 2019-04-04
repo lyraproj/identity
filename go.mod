@@ -1,6 +1,7 @@
 module github.com/lyraproj/identity
 
 require (
+	github.com/hashicorp/go-hclog v0.8.0
 	github.com/lyraproj/pcore v0.0.0-20190319163905-c435c6e1b96e
 	github.com/lyraproj/semver v0.0.0-20181213164306-02ecea2cd6a2
 	github.com/lyraproj/servicesdk v0.0.0-20190319214040-e12463a5bc49
