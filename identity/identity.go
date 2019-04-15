@@ -337,14 +337,17 @@ func (i *identity) Sweep(internalIDPrefix string) error {
 	})
 }
 
-// Garbage finds all tuples that have been moved to the garbage bin. The tuples are returned in the order they were
-// added to the store. An empty slice is returned when no tuples are found.
-func (i *identity) Garbage() (px.List, error) {
+// Garbage finds all tuples that are keyed by an internalID prefixed by internalIDPrefix that have been moved to the
+// garbage bin. The tuples are returned in the order they were added to the store. An empty slice is returned when no
+// tuples are found.
+func (i *identity) Garbage(internalIDPrefix string) (px.List, error) {
 	found := make([]px.Value, 0, 32)
 	err := i.withDb(func(db *bolt.DB) error {
 		return db.View(func(tx *bolt.Tx) error {
 			return tx.Bucket(garbage).ForEach(func(k, v []byte) error {
-				found = append(found, unmarshalTuple(v).ValueTuple())
+				if strings.HasPrefix(string(k), internalIDPrefix) {
+					found = append(found, unmarshalTuple(v).ValueTuple())
+				}
 				return nil
 			})
 		})
