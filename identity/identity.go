@@ -345,8 +345,9 @@ func (i *identity) Garbage(internalIDPrefix string) (px.List, error) {
 	err := i.withDb(func(db *bolt.DB) error {
 		return db.View(func(tx *bolt.Tx) error {
 			return tx.Bucket(garbage).ForEach(func(k, v []byte) error {
-				if strings.HasPrefix(string(k), internalIDPrefix) {
-					found = append(found, unmarshalTuple(v).ValueTuple())
+				t := unmarshalTuple(v)
+				if strings.HasPrefix(t.InternalID, internalIDPrefix) {
+					found = append(found, t.ValueTuple())
 				}
 				return nil
 			})
