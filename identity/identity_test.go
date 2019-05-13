@@ -274,7 +274,7 @@ func TestSweep(t *testing.T) {
 	require.Nil(t, id.Sweep("a:"))
 
 	// Retrieve the garbage bin
-	garbage, err := id.Garbage()
+	garbage, err := id.Garbage("")
 	require.Nil(t, err)
 	require.EqualValues(t, 2, garbage.Len())
 
@@ -318,7 +318,7 @@ func TestPurge(t *testing.T) {
 	checkGetExternal(t, id, "a:i2", "")
 
 	// Retrieve the garbage bin
-	garbage, err := id.Garbage()
+	garbage, err := id.Garbage("")
 	require.Nil(t, err)
 	require.EqualValues(t, 1, garbage.Len())
 
