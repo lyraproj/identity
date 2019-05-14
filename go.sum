@@ -21,12 +21,12 @@ github.com/lyraproj/data-protobuf v0.0.0-20190329160005-a909d9e1f93b h1:qGgMkFUQ
 github.com/lyraproj/data-protobuf v0.0.0-20190329160005-a909d9e1f93b/go.mod h1:oQIFBu0fmkiSpSRROEgK5gnjQ/ZDrx3UdpRpT3791Gg=
 github.com/lyraproj/issue v0.0.0-20190513084509-faf9b542f594 h1:IcsHRQ3xzCIcK0eXpot8IYgEyUQPEFHmFErZwJcsDqk=
 github.com/lyraproj/issue v0.0.0-20190513084509-faf9b542f594/go.mod h1:jqRRmAiVqjTehhncbKJPoC2AFoxxkritzzlfWioTa00=
-github.com/lyraproj/pcore v0.0.0-20190513110440-3136007d878d h1:UGQ37YS1mhNm2I4xutG+DaM+4P4x/TEdWpQk950eWaI=
-github.com/lyraproj/pcore v0.0.0-20190513110440-3136007d878d/go.mod h1:NGvVSNVj6tF0acszsfqcu+qtNt5b1hlSiiL3oNSuNMI=
+github.com/lyraproj/pcore v0.0.0-20190514082225-61649d71c936 h1:oEI8jC1efmrpvMBe0ndLy9RVadxOwv8iYNV/FENemRA=
+github.com/lyraproj/pcore v0.0.0-20190514082225-61649d71c936/go.mod h1:NGvVSNVj6tF0acszsfqcu+qtNt5b1hlSiiL3oNSuNMI=
 github.com/lyraproj/semver v0.0.0-20181213164306-02ecea2cd6a2 h1:vb4PbiMtIXdhsOUinkkcqZiASDIZzXRhSG4yvNfE0tg=
 github.com/lyraproj/semver v0.0.0-20181213164306-02ecea2cd6a2/go.mod h1:KOdZKnEBdDb2iGPUnHiKpk3M5cvv949xMyj8XPqaMF0=
-github.com/lyraproj/servicesdk v0.0.0-20190513111104-a5b399ba7e1d h1:Tcb024zLxFytOAbrPYK6Tbw6i+H5weljUWP8TRU8vOA=
-github.com/lyraproj/servicesdk v0.0.0-20190513111104-a5b399ba7e1d/go.mod h1:uT1n4KLYr5P04yOs4gO6zP4UkjXhUG46bvHhrgt8zfI=
+github.com/lyraproj/servicesdk v0.0.0-20190514145959-5467213bbd8f h1:SFmT35xzxpVUOHn9b+1o8eEAGKdx0/DswRJPZmn/x0k=
+github.com/lyraproj/servicesdk v0.0.0-20190514145959-5467213bbd8f/go.mod h1:8qbDlTKcDFzE+pHn2ZhQrXX3lh2ChiJb9aq9pZHmg70=
 github.com/mitchellh/go-testing-interface v0.0.0-20171004221916-a61a99592b77 h1:7GoSOOW2jpsfkntVKaS2rAr1TJqfcxotyaUcuxoZSzg=
 github.com/mitchellh/go-testing-interface v0.0.0-20171004221916-a61a99592b77/go.mod h1:kRemZodwjscx+RGhAo8eIhFbs2+BFgRtFPeD/KE+zxI=
 github.com/oklog/run v1.0.0 h1:Ru7dDtJNOyC66gQ5dQmaCa0qIsAUFY3sFpK1Xk8igrw=
