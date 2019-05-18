@@ -25,8 +25,8 @@ github.com/lyraproj/pcore v0.0.0-20190516164225-2c1838ece043 h1:tSLm3r+Z+ej4kyaX
 github.com/lyraproj/pcore v0.0.0-20190516164225-2c1838ece043/go.mod h1:NEsDhoJnhU6dqrNy3M2W4AWryrwPhADubXu6RWVdAl4=
 github.com/lyraproj/semver v0.0.0-20181213164306-02ecea2cd6a2 h1:vb4PbiMtIXdhsOUinkkcqZiASDIZzXRhSG4yvNfE0tg=
 github.com/lyraproj/semver v0.0.0-20181213164306-02ecea2cd6a2/go.mod h1:KOdZKnEBdDb2iGPUnHiKpk3M5cvv949xMyj8XPqaMF0=
-github.com/lyraproj/servicesdk v0.0.0-20190516204150-b994d931dad2 h1:MXKwVZ0PTGynl54eJQHIXzX/av5QysIyVEavwiGyh+8=
-github.com/lyraproj/servicesdk v0.0.0-20190516204150-b994d931dad2/go.mod h1:oRnxP9zeUPRbbQ1i+b1uKKrkzq2qhNcOLID9/Kl1AMM=
+github.com/lyraproj/servicesdk v0.0.0-20190517131335-c9b92d064792 h1:C4qmB2/Y/70SmB+3MLxZImhp0oPI+ta/WiAI7WbK5q4=
+github.com/lyraproj/servicesdk v0.0.0-20190517131335-c9b92d064792/go.mod h1:oRnxP9zeUPRbbQ1i+b1uKKrkzq2qhNcOLID9/Kl1AMM=
 github.com/mitchellh/go-testing-interface v0.0.0-20171004221916-a61a99592b77 h1:7GoSOOW2jpsfkntVKaS2rAr1TJqfcxotyaUcuxoZSzg=
 github.com/mitchellh/go-testing-interface v0.0.0-20171004221916-a61a99592b77/go.mod h1:kRemZodwjscx+RGhAo8eIhFbs2+BFgRtFPeD/KE+zxI=
 github.com/oklog/run v1.0.0 h1:Ru7dDtJNOyC66gQ5dQmaCa0qIsAUFY3sFpK1Xk8igrw=
