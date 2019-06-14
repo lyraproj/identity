@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/lyraproj/pcore/pcore"
@@ -23,6 +24,7 @@ import (
 // Identity stores identity state
 type identity struct {
 	filename string
+	lock     sync.Mutex
 }
 
 // A tuple represents an external ID with timestamp and GC status
@@ -515,6 +517,8 @@ func (i *identity) addToGarbage(tx *bolt.Tx, t *tuple) {
 }
 
 func (i *identity) withDb(df func(*bolt.DB) error) (err error) {
+	i.lock.Lock()
+
 	var db *bolt.DB
 	db, err = bolt.Open(i.filename, 0600, &bolt.Options{Timeout: 200 * time.Millisecond})
 	if err != nil {
@@ -523,6 +527,8 @@ func (i *identity) withDb(df func(*bolt.DB) error) (err error) {
 
 	defer func() {
 		e2 := db.Close()
+		i.lock.Unlock()
+
 		if e := recover(); e != nil {
 			if ie, ok := e.(identityError); ok {
 				// Panic raised within Identity
