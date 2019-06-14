@@ -25,8 +25,6 @@ github.com/lyraproj/pcore v0.0.0-20190606102217-7824aee25201 h1:KlTHcsEPuRXi/cXY
 github.com/lyraproj/pcore v0.0.0-20190606102217-7824aee25201/go.mod h1:yqZNNXXw/2It5Jh2Vc+g93Qm+1q6EklXJ0t/xqNNBV8=
 github.com/lyraproj/semver v0.0.0-20181213164306-02ecea2cd6a2 h1:vb4PbiMtIXdhsOUinkkcqZiASDIZzXRhSG4yvNfE0tg=
 github.com/lyraproj/semver v0.0.0-20181213164306-02ecea2cd6a2/go.mod h1:KOdZKnEBdDb2iGPUnHiKpk3M5cvv949xMyj8XPqaMF0=
-github.com/lyraproj/servicesdk v0.0.0-20190607070716-322c167d24a9 h1:u+JH8zmUaeXBjHnoc4YZz4MFOQwdClUuy7MXfX831f4=
-github.com/lyraproj/servicesdk v0.0.0-20190607070716-322c167d24a9/go.mod h1:+IR74NuJQyJnnRUUrtp44Lu5Iu950oAwW0oSs2isvXI=
 github.com/mitchellh/go-testing-interface v0.0.0-20171004221916-a61a99592b77 h1:7GoSOOW2jpsfkntVKaS2rAr1TJqfcxotyaUcuxoZSzg=
 github.com/mitchellh/go-testing-interface v0.0.0-20171004221916-a61a99592b77/go.mod h1:kRemZodwjscx+RGhAo8eIhFbs2+BFgRtFPeD/KE+zxI=
 github.com/oklog/run v1.0.0 h1:Ru7dDtJNOyC66gQ5dQmaCa0qIsAUFY3sFpK1Xk8igrw=
@@ -37,6 +35,8 @@ github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+
 github.com/stretchr/testify v1.2.2/go.mod h1:a8OnRcib4nhh0OaRAV+Yts87kKdq0PP7pXfy6kDkUVs=
 github.com/stretchr/testify v1.3.0 h1:TivCn/peBQ7UY8ooIcPgZFpTNSz0Q2U6UrFlUfqbe0Q=
 github.com/stretchr/testify v1.3.0/go.mod h1:M5WIy9Dh21IEIfnGCwXGc5bZfKNJtfHm1UVUgZn+9EI=
+github.com/thallgren/servicesdk v0.0.0-20190614075654-f02c272830a4 h1:PUnK7tgP7c+rnY4Ct4vojNZtwLOaBYQV8TWvHNw2zco=
+github.com/thallgren/servicesdk v0.0.0-20190614075654-f02c272830a4/go.mod h1:+IR74NuJQyJnnRUUrtp44Lu5Iu950oAwW0oSs2isvXI=
 go.etcd.io/bbolt v1.3.2 h1:Z/90sZLPOeCy2PwprqkFa25PdkusRzaj9P8zm/KNyvk=
 go.etcd.io/bbolt v1.3.2/go.mod h1:IbVyRI1SCnLcuJnV2u8VeU0CEYM7e686BmAb1XKL+uU=
 golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2/go.mod h1:djNgcEr1/C05ACkg1iLfiJU5Ep61QUkGW8qpdssI0+w=

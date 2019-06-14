@@ -8,3 +8,5 @@ require (
 	github.com/stretchr/testify v1.3.0
 	go.etcd.io/bbolt v1.3.2
 )
+
+replace github.com/lyraproj/servicesdk => github.com/thallgren/servicesdk v0.0.0-20190614075654-f02c272830a4

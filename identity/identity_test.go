@@ -25,13 +25,13 @@ func deleteFile(filename string) {
 
 func checkGetInternal(t *testing.T, id serviceapi.Identity, externalID, internalID string) {
 	actual, err := id.GetInternal(externalID)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.Equal(t, internalID, actual)
 }
 
 func checkGetExternal(t *testing.T, id serviceapi.Identity, internalID, externalID string) {
 	actual, err := id.GetExternal(internalID)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.Equal(t, externalID, actual)
 }
 
@@ -41,7 +41,7 @@ func TestBasicFunctionality(t *testing.T) {
 	deleteFile(filename)
 	defer deleteFile(filename)
 	id, err := NewIdentity(filename)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// Check there is no mapping
 	checkGetExternal(t, id, "i1", "")
@@ -51,7 +51,7 @@ func TestBasicFunctionality(t *testing.T) {
 
 	// Insert something
 	err = id.Associate("i1", "e1")
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// Check there is now a mapping
 	checkGetExternal(t, id, "i1", "e1")
@@ -66,15 +66,15 @@ func TestBasicFunctionalityAcrossInstances(t *testing.T) {
 	deleteFile(filename)
 	defer deleteFile(filename)
 	id, err := NewIdentity(filename)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// Insert something
 	err = id.Associate("i1", "e1")
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	//new up another identity service
 	id, err = NewIdentity(filename)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// Check there is now a mapping
 	checkGetExternal(t, id, "i1", "e1")
@@ -87,7 +87,7 @@ func TestMultipleKeys(t *testing.T) {
 	deleteFile(filename)
 	defer deleteFile(filename)
 	id, err := NewIdentity(filename)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// Check there is no mapping
 	checkGetExternal(t, id, "i1", "")
@@ -100,10 +100,10 @@ func TestMultipleKeys(t *testing.T) {
 	checkGetInternal(t, id, "e4", "")
 
 	// Insert something
-	require.Nil(t, id.Associate("i1", "e1"))
-	require.Nil(t, id.Associate("i2", "e2"))
-	require.Nil(t, id.Associate("i3", "e3"))
-	require.Nil(t, id.Associate("i4", "e4"))
+	require.NoError(t, id.Associate("i1", "e1"))
+	require.NoError(t, id.Associate("i2", "e2"))
+	require.NoError(t, id.Associate("i3", "e3"))
+	require.NoError(t, id.Associate("i4", "e4"))
 
 	// Check there is now a mapping
 	checkGetExternal(t, id, "i1", "e1")
@@ -138,13 +138,13 @@ func TestRemove(t *testing.T) {
 	deleteFile(filename)
 	defer deleteFile(filename)
 	id, err := NewIdentity(filename)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// Insert something
-	require.Nil(t, id.Associate("i1", "e1"))
-	require.Nil(t, id.Associate("i2", "e2"))
-	require.Nil(t, id.Associate("i3", "e3"))
-	require.Nil(t, id.Associate("i4", "e4"))
+	require.NoError(t, id.Associate("i1", "e1"))
+	require.NoError(t, id.Associate("i2", "e2"))
+	require.NoError(t, id.Associate("i3", "e3"))
+	require.NoError(t, id.Associate("i4", "e4"))
 
 	// Check there is now a mapping
 	checkGetExternal(t, id, "i1", "e1")
@@ -192,16 +192,16 @@ func TestSearch(t *testing.T) {
 	deleteFile(filename)
 	defer deleteFile(filename)
 	id, err := NewIdentity(filename)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// Insert something
-	require.Nil(t, id.Associate("a:i1", "e1"))
-	require.Nil(t, id.Associate("a:i2", "e2"))
-	require.Nil(t, id.Associate("b:i3", "e3"))
-	require.Nil(t, id.Associate("b:i4", "e4"))
+	require.NoError(t, id.Associate("a:i1", "e1"))
+	require.NoError(t, id.Associate("a:i2", "e2"))
+	require.NoError(t, id.Associate("b:i3", "e3"))
+	require.NoError(t, id.Associate("b:i4", "e4"))
 
 	mappings, err := id.Search("a:")
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.EqualValues(t, 2, mappings.Len())
 }
 
@@ -210,10 +210,10 @@ func TestBumpEra(t *testing.T) {
 	deleteFile(filename)
 	defer deleteFile(filename)
 	id, err := NewIdentity(filename)
-	require.Nil(t, err)
-	require.Nil(t, id.BumpEra())
+	require.NoError(t, err)
+	require.NoError(t, id.BumpEra())
 	era, err := id.ReadEra()
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.EqualValues(t, int64(1), era)
 }
 
@@ -222,21 +222,21 @@ func TestAccessSetEra(t *testing.T) {
 	deleteFile(filename)
 	defer deleteFile(filename)
 	id, err := NewIdentity(filename)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// Insert something
-	require.Nil(t, id.Associate("a:i1", "e1"))
-	require.Nil(t, id.Associate("a:i2", "e2"))
+	require.NoError(t, id.Associate("a:i1", "e1"))
+	require.NoError(t, id.Associate("a:i2", "e2"))
 
 	// Check that era is zero
 	mappings, err := id.Search("a:")
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.EqualValues(t, 2, mappings.Len())
 	require.EqualValues(t, int64(0), mappings.At(0).(px.List).At(3).(px.Number).Int())
 	require.EqualValues(t, int64(0), mappings.At(1).(px.List).At(3).(px.Number).Int())
 
 	// Bump era
-	require.Nil(t, id.BumpEra())
+	require.NoError(t, id.BumpEra())
 
 	// Access using getExternal
 	checkGetExternal(t, id, "a:i1", "e1")
@@ -244,7 +244,7 @@ func TestAccessSetEra(t *testing.T) {
 	// Check that era is one on the accessed element and zero
 	// on the one that wasn't accessed
 	mappings, err = id.Search("a:")
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.EqualValues(t, 2, mappings.Len())
 	require.EqualValues(t, int64(1), mappings.At(0).(px.List).At(3).(px.Number).Int())
 	require.EqualValues(t, int64(0), mappings.At(1).(px.List).At(3).(px.Number).Int())
@@ -255,27 +255,27 @@ func TestSweep(t *testing.T) {
 	deleteFile(filename)
 	defer deleteFile(filename)
 	id, err := NewIdentity(filename)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// Insert something
-	require.Nil(t, id.Associate("a:i1", "e1"))
-	require.Nil(t, id.Associate("a:i2", "e2"))
-	require.Nil(t, id.Associate("a:i3", "e3"))
+	require.NoError(t, id.Associate("a:i1", "e1"))
+	require.NoError(t, id.Associate("a:i2", "e2"))
+	require.NoError(t, id.Associate("a:i3", "e3"))
 
 	// Bump era
-	require.Nil(t, id.BumpEra())
+	require.NoError(t, id.BumpEra())
 
 	// Access using getExternal
 	checkGetExternal(t, id, "a:i1", "e1")
 	checkGetExternal(t, id, "a:i2", "e2")
-	require.Nil(t, id.RemoveInternal("a:i2"))
+	require.NoError(t, id.RemoveInternal("a:i2"))
 
 	// Check that element that wasn't accessed is found by SearchGarbage
-	require.Nil(t, id.Sweep("a:"))
+	require.NoError(t, id.Sweep("a:"))
 
 	// Retrieve the garbage bin
 	garbage, err := id.Garbage("")
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.EqualValues(t, 2, garbage.Len())
 
 	// Accessed between BumpEra and Sweep and then explicitly removed
@@ -287,39 +287,75 @@ func TestSweep(t *testing.T) {
 	require.EqualValues(t, int64(0), garbage.At(1).(px.List).At(3).(px.Number).Int())
 }
 
+func TestSweepWithRef(t *testing.T) {
+	filename := "TestSearchGarbage.db"
+	deleteFile(filename)
+	defer deleteFile(filename)
+	id, err := NewIdentity(filename)
+	require.NoError(t, err)
+
+	// Insert something
+	require.NoError(t, id.Associate("a:i1", "e1"))
+	require.NoError(t, id.Associate("a:i2", "e2"))
+	require.NoError(t, id.AddReference("a:i3", "b:"))
+	require.NoError(t, id.Associate("b:i1", "e3"))
+	require.NoError(t, id.Associate("b:i2", "e4"))
+
+	// Bump era
+	require.NoError(t, id.BumpEra())
+
+	// Access using getExternal
+	checkGetExternal(t, id, "a:i1", "e1")
+	checkGetExternal(t, id, "b:i1", "e3")
+
+	// Check that element that wasn't accessed is found by SearchGarbage
+	require.NoError(t, id.Sweep("a:"))
+
+	// Retrieve the garbage bin
+	garbage, err := id.Garbage("a:")
+	require.NoError(t, err)
+	require.EqualValues(t, 2, garbage.Len())
+
+	// Never accessed between BumpEra and Sweep
+	require.EqualValues(t, "a:i2", garbage.At(0).(px.List).At(0).String())
+	require.EqualValues(t, "e2", garbage.At(0).(px.List).At(1).String())
+	require.EqualValues(t, "b:i2", garbage.At(1).(px.List).At(0).String())
+	require.EqualValues(t, "e4", garbage.At(1).(px.List).At(1).String())
+}
+
 func TestPurge(t *testing.T) {
 	filename := "TestPurge.db"
 	deleteFile(filename)
 	defer deleteFile(filename)
 	id, err := NewIdentity(filename)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// Insert something
-	require.Nil(t, id.Associate("a:i1", "e1"))
-	require.Nil(t, id.Associate("a:i2", "e2"))
-	require.Nil(t, id.Associate("a:i3", "e3"))
+	require.NoError(t, id.Associate("a:i1", "e1"))
+	require.NoError(t, id.Associate("a:i2", "e2"))
+	require.NoError(t, id.Associate("a:i3", "e3"))
 
 	// Bump era
-	require.Nil(t, id.BumpEra())
+	require.NoError(t, id.BumpEra())
 
 	// Access using getExternal
 	checkGetExternal(t, id, "a:i1", "e1")
 	checkGetExternal(t, id, "a:i2", "e2")
-	require.Nil(t, id.RemoveInternal("a:i2"))
+	require.NoError(t, id.RemoveInternal("a:i2"))
 
 	// Check that element that wasn't accessed is found by SearchGarbage
-	require.Nil(t, id.Sweep("a:"))
+	require.NoError(t, id.Sweep("a:"))
 
 	// Purge
-	require.Nil(t, id.PurgeExternal("e1"))
-	require.Nil(t, id.PurgeInternal("a:i2"))
+	require.NoError(t, id.PurgeExternal("e1"))
+	require.NoError(t, id.PurgeInternal("a:i2"))
 
 	checkGetExternal(t, id, "a:i1", "")
 	checkGetExternal(t, id, "a:i2", "")
 
 	// Retrieve the garbage bin
 	garbage, err := id.Garbage("")
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.EqualValues(t, 1, garbage.Len())
 
 	// Not purged
