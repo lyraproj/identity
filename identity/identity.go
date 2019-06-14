@@ -33,6 +33,10 @@ type tuple struct {
 	Era        int64
 }
 
+// A reference represents a mapping between two internal IDs. It is used
+// to record that one workflow is calling on another
+type reference = tuple
+
 type storeMeta struct {
 	Version   string
 	Timestamp time.Time
@@ -53,9 +57,10 @@ func (ie identityError) Error() string {
 var metadata = []byte("metadata")
 var internalToExternal = []byte("internalToExternal")
 var externalToInternal = []byte("externalToInternal")
+var references = []byte("references")
 var garbage = []byte("garbage")
 
-var identityStoreVersion = semver.MustParseVersion("1.0.0")
+var identityStoreVersion = semver.MustParseVersion("1.1.0")
 var supportedVersions = semver.MustParseVersionRange("1.x")
 
 // Start the Identity service running
@@ -102,10 +107,19 @@ func NewIdentity(filename string) (serviceapi.Identity, error) {
 					return fmt.Errorf("identity store at '%s' has invalid format", i.filename)
 				}
 				md := unmarshalMetadata(mb)
-				if !supportedVersions.Includes(semver.MustParseVersion(md.Version)) {
+				v := semver.MustParseVersion(md.Version)
+				if !supportedVersions.Includes(v) {
 					return fmt.Errorf("identity store at '%s' has unsupported data store version. Expected %s, got %s", i.filename, supportedVersions, md.Version)
 				}
-				return nil
+				if md.Version == `1.0.0` {
+					// Upgrade storage to 1.1.0
+					_, err = tx.CreateBucket(references)
+					if err == nil {
+						md.Version = `1.1.0`
+						err = mbb.Put(metadata, marshalMetadata(md))
+					}
+				}
+				return err
 			}
 
 			// No metadata exists. May still be an older version
@@ -123,6 +137,9 @@ func NewIdentity(filename string) (serviceapi.Identity, error) {
 						_, err = tx.CreateBucket(externalToInternal)
 						if err == nil {
 							_, err = tx.CreateBucket(garbage)
+							if err == nil {
+								_, err = tx.CreateBucket(references)
+							}
 						}
 					}
 				}
@@ -188,6 +205,27 @@ func (i *identity) Associate(internalID, externalID string) error {
 			b := marshalTuple(&tuple{InternalID: internalID, ExternalID: externalID, Timestamp: time.Now(), Era: m.Era})
 			putInBucket(tx, internalToExternal, iid, b)
 			putInBucket(tx, externalToInternal, eid, iid)
+			return nil
+		})
+	})
+}
+
+func refKey(internalId, otherId string) []byte {
+	return []byte(internalId + "\001" + otherId)
+}
+
+func (i *identity) AddReference(internalId, otherId string) error {
+	return i.withDb(func(db *bolt.DB) error {
+		return db.Update(func(tx *bolt.Tx) error {
+			refKey := refKey(internalId, otherId)
+			if t := readReference(tx, refKey); t != nil {
+				// Mapping already present. Just update era
+				i.updateEra(t, tx)
+				return nil
+			}
+			m := i.readMetadata(tx)
+			r := marshalReference(&reference{InternalID: internalId, ExternalID: otherId, Timestamp: time.Now(), Era: m.Era})
+			putInBucket(tx, references, refKey, r)
 			return nil
 		})
 	})
@@ -271,6 +309,17 @@ func (i *identity) PurgeInternal(internalID string) error {
 	})
 }
 
+// Purge all references extending from the internal ID in eras less than the current era
+func (i *identity) PurgeReferences(internalIDPrefix string) error {
+	return i.withDb(func(db *bolt.DB) error {
+		return db.Update(func(tx *bolt.Tx) error {
+			era := i.readMetadata(tx).Era
+			_, err := i.buildReferences(tx, era, internalIDPrefix, true)
+			return err
+		})
+	})
+}
+
 // RemoveExternal moves all mappings to or from this external ID to the garbage bin
 func (i *identity) RemoveExternal(externalID string) error {
 	return i.withDb(func(db *bolt.DB) error {
@@ -324,8 +373,21 @@ func (i *identity) Sweep(internalIDPrefix string) error {
 	return i.withDb(func(db *bolt.DB) error {
 		return db.Update(func(tx *bolt.Tx) error {
 			era := i.readMetadata(tx).Era
+			prefixes, err := i.buildReferences(tx, era, internalIDPrefix, false)
+			if err != nil {
+				return err
+			}
+
 			return tx.Bucket(internalToExternal).ForEach(func(k, v []byte) error {
-				if strings.HasPrefix(string(k), internalIDPrefix) {
+				found := false
+				id := string(k)
+				for _, pfx := range prefixes {
+					if strings.HasPrefix(id, pfx) {
+						found = true
+						break
+					}
+				}
+				if found {
 					t := unmarshalTuple(v)
 					if t.Era < era {
 						i.addToGarbage(tx, t)
@@ -337,17 +399,69 @@ func (i *identity) Sweep(internalIDPrefix string) error {
 	})
 }
 
+func (i *identity) buildReferences(tx *bolt.Tx, era int64, internalIDPrefix string, purge bool) ([]string, error) {
+	var refsInEra []*reference
+	rb := tx.Bucket(references)
+	err := rb.ForEach(func(k, v []byte) error {
+		r := unmarshalReference(v)
+		if r.Era < era {
+			refsInEra = append(refsInEra, r)
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	prefixes := append(make([]string, 0, 16), internalIDPrefix)
+	if len(refsInEra) > 0 {
+		// Sort to ensure that nested references are resolved correctly
+		sort.Slice(refsInEra, func(i, j int) bool {
+			return refsInEra[i].Timestamp.Before(refsInEra[j].Timestamp)
+		})
+
+		// Retrieve all references that extend from the current references
+		for _, ref := range refsInEra {
+			found := false
+			for _, pfx := range prefixes {
+				if found = strings.HasPrefix(ref.InternalID, pfx); found {
+					break
+				}
+			}
+			if found {
+				if purge {
+					err = rb.Delete(refKey(ref.InternalID, ref.ExternalID))
+					if err != nil {
+						return nil, err
+					}
+				}
+				prefixes = append(prefixes, ref.ExternalID)
+			}
+		}
+	}
+	return prefixes, nil
+}
+
 // Garbage finds all tuples that are keyed by an internalID prefixed by internalIDPrefix that have been moved to the
 // garbage bin. The tuples are returned in the order they were added to the store. An empty slice is returned when no
 // tuples are found.
 func (i *identity) Garbage(internalIDPrefix string) (px.List, error) {
-	found := make([]px.Value, 0, 32)
+	gs := make([]px.Value, 0, 32)
 	err := i.withDb(func(db *bolt.DB) error {
 		return db.View(func(tx *bolt.Tx) error {
+			era := i.readMetadata(tx).Era
+			prefixes, err := i.buildReferences(tx, era, internalIDPrefix, false)
+			if err != nil {
+				return err
+			}
+
 			return tx.Bucket(garbage).ForEach(func(k, v []byte) error {
 				t := unmarshalTuple(v)
-				if strings.HasPrefix(t.InternalID, internalIDPrefix) {
-					found = append(found, t.ValueTuple())
+				for _, pfx := range prefixes {
+					if strings.HasPrefix(t.InternalID, pfx) {
+						gs = append(gs, t.ValueTuple())
+						break
+					}
 				}
 				return nil
 			})
@@ -356,7 +470,7 @@ func (i *identity) Garbage(internalIDPrefix string) (px.List, error) {
 	if err != nil {
 		return nil, err
 	}
-	return sortedValueTuples(found), nil
+	return sortedValueTuples(gs), nil
 }
 
 func (i *identity) removeExternal(tx *bolt.Tx, eid []byte, moveToGarbage bool) {
@@ -449,6 +563,14 @@ func readTuple(tx *bolt.Tx, internalID []byte) *tuple {
 	return unmarshalTuple(bs)
 }
 
+func readReference(tx *bolt.Tx, refID []byte) *reference {
+	bs := tx.Bucket(references).Get(refID)
+	if bs == nil {
+		return nil
+	}
+	return unmarshalReference(bs)
+}
+
 func marshalMetadata(md *storeMeta) []byte {
 	return marshalUnknown(`metadata`, md)
 }
@@ -461,6 +583,16 @@ func unmarshalTuple(bs []byte) *tuple {
 	t := &tuple{}
 	unmarshalUnknown(`tuple`, bs, &t)
 	return t
+}
+
+func marshalReference(ref *reference) []byte {
+	return marshalUnknown(`reference`, ref)
+}
+
+func unmarshalReference(bs []byte) *reference {
+	r := &reference{}
+	unmarshalUnknown(`reference`, bs, &r)
+	return r
 }
 
 func unmarshalMetadata(md []byte) *storeMeta {
