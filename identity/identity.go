@@ -69,10 +69,7 @@ var supportedVersions = semver.MustParseVersionRange("1.x")
 func Start(filename string) {
 	pcore.Do(func(c px.Context) {
 		sb := service.NewServiceBuilder(c, "Identity")
-		id, err := NewIdentity(filename)
-		if err != nil {
-			panic(err)
-		}
+		id := NewIdentity(filename)
 		sb.RegisterAPI("Identity::Service", id)
 		s := sb.Server()
 		grpc.Serve(c, s)
@@ -91,17 +88,17 @@ func (t *tuple) ValueTuple() px.List {
 }
 
 // NewIdentity opens the database
-func NewIdentity(filename string) (serviceapi.Identity, error) {
+func NewIdentity(filename string) serviceapi.Identity {
 	absName, err := filepath.Abs(filename)
 	if err != nil {
-		return nil, err
+		panic(err)
 	}
 	i := &identity{
 		filename: absName,
 	}
-	err = i.withDb(func(db *bolt.DB) error {
+	i.withDb(func(db *bolt.DB) {
 		// Ensure that buckets exist
-		return db.Update(func(tx *bolt.Tx) error {
+		err := db.Update(func(tx *bolt.Tx) error {
 			mbb := tx.Bucket(metadata)
 			if mbb != nil {
 				mb := mbb.Get(metadata)
@@ -148,32 +145,38 @@ func NewIdentity(filename string) (serviceapi.Identity, error) {
 			}
 			return err
 		})
+		if err != nil {
+			panic(err)
+		}
 	})
-	if err != nil {
-		i = nil
-	}
-	return i, err
+	return i
 }
 
 // BumpEra bumps the current GC-era
-func (i *identity) BumpEra() error {
-	return i.withDb(func(db *bolt.DB) error {
-		return db.Update(func(tx *bolt.Tx) error {
+func (i *identity) BumpEra(_ px.Context) {
+	i.withDb(func(db *bolt.DB) {
+		err := db.Update(func(tx *bolt.Tx) error {
 			md := i.readMetadata(tx)
 			md.Era++
 			putInBucket(tx, metadata, metadata, marshalMetadata(md))
 			return nil
 		})
+		if err != nil {
+			panic(err)
+		}
 	})
 }
 
 // ReadEra returns the current GC-era
-func (i *identity) ReadEra() (era int64, err error) {
-	err = i.withDb(func(db *bolt.DB) error {
-		return db.View(func(tx *bolt.Tx) error {
+func (i *identity) ReadEra(_ px.Context) (era int64) {
+	i.withDb(func(db *bolt.DB) {
+		err := db.View(func(tx *bolt.Tx) error {
 			era = i.readMetadata(tx).Era
 			return nil
 		})
+		if err != nil {
+			panic(err)
+		}
 	})
 	return
 }
@@ -183,9 +186,9 @@ func (i *identity) ReadEra() (era int64, err error) {
 // Any existing mapping involving the internal or external ID will be moved to the garbage
 // bin unless it is an exact match of the desired mapping, in which case the GC era will
 // be updated to the current era of the storage
-func (i *identity) Associate(internalID, externalID string) error {
-	return i.withDb(func(db *bolt.DB) error {
-		return db.Update(func(tx *bolt.Tx) error {
+func (i *identity) Associate(_ px.Context, internalID, externalID string) {
+	i.withDb(func(db *bolt.DB) {
+		err := db.Update(func(tx *bolt.Tx) error {
 			iid := []byte(internalID)
 			eid := []byte(externalID)
 
@@ -209,6 +212,9 @@ func (i *identity) Associate(internalID, externalID string) error {
 			putInBucket(tx, externalToInternal, eid, iid)
 			return nil
 		})
+		if err != nil {
+			panic(err)
+		}
 	})
 }
 
@@ -216,9 +222,9 @@ func refKey(internalId, otherId string) []byte {
 	return []byte(internalId + "\001" + otherId)
 }
 
-func (i *identity) AddReference(internalId, otherId string) error {
-	return i.withDb(func(db *bolt.DB) error {
-		return db.Update(func(tx *bolt.Tx) error {
+func (i *identity) AddReference(_ px.Context, internalId, otherId string) {
+	i.withDb(func(db *bolt.DB) {
+		err := db.Update(func(tx *bolt.Tx) error {
 			refKey := refKey(internalId, otherId)
 			if t := readReference(tx, refKey); t != nil {
 				// Mapping already present. Just update era
@@ -230,65 +236,77 @@ func (i *identity) AddReference(internalId, otherId string) error {
 			putInBucket(tx, references, refKey, r)
 			return nil
 		})
+		if err != nil {
+			panic(err)
+		}
 	})
 }
 
 // GetExternal returns the external ID associated with the given internal ID or an empty string if no association exists
 // Updates GC-era of the mapping to the current era of the storage
-func (i *identity) GetExternal(internalID string) (string, error) {
-	externalID := ""
-	err := i.withDb(func(db *bolt.DB) error {
-		return db.Update(func(tx *bolt.Tx) error {
+func (i *identity) GetExternal(_ px.Context, internalID string) (externalID string, found bool) {
+	i.withDb(func(db *bolt.DB) {
+		err := db.Update(func(tx *bolt.Tx) error {
 			t := readTuple(tx, []byte(internalID))
 			if t != nil {
 				externalID = string(t.ExternalID)
+				found = true
 				i.updateEra(t, tx)
 			}
 			return nil
 		})
+		if err != nil {
+			panic(err)
+		}
 	})
-	return externalID, err
+	return
 }
 
 // GetInternal returns the internal ID associated with the given external ID or an empty string if no association exists
 // Updates GC-era of the mapping to the current era of the storage
-func (i *identity) GetInternal(externalID string) (string, error) {
-	internalID := ""
-	err := i.withDb(func(db *bolt.DB) error {
-		return db.Update(func(tx *bolt.Tx) error {
+func (i *identity) GetInternal(_ px.Context, externalID string) (internalID string, found bool) {
+	i.withDb(func(db *bolt.DB) {
+		err := db.Update(func(tx *bolt.Tx) error {
 			iid := tx.Bucket(externalToInternal).Get([]byte(externalID))
 			if iid == nil {
 				return nil
 			}
 			internalID = string(iid)
+			found = true
 			t := readTuple(tx, iid)
 			if t != nil {
 				i.updateEra(t, tx)
 			}
 			return nil
 		})
+		if err != nil {
+			panic(err)
+		}
 	})
-	return internalID, err
+	return
 }
 
 // PurgeExternal explicitly removes any mappings involving the given external ID, both from the store
 // and from the garbage bin.
-func (i *identity) PurgeExternal(externalID string) error {
-	return i.withDb(func(db *bolt.DB) error {
-		return db.Update(func(tx *bolt.Tx) error {
+func (i *identity) PurgeExternal(_ px.Context, externalID string) {
+	i.withDb(func(db *bolt.DB) {
+		err := db.Update(func(tx *bolt.Tx) error {
 			eid := []byte(externalID)
 			i.removeExternal(tx, eid, false)
 			deleteFromBucket(tx, garbage, eid)
 			return nil
 		})
+		if err != nil {
+			panic(err)
+		}
 	})
 }
 
 // PurgeInternal explicitly removes any mappings involving the given internal ID, both from the store
 // and from the garbage bin.
-func (i *identity) PurgeInternal(internalID string) error {
-	return i.withDb(func(db *bolt.DB) error {
-		return db.Update(func(tx *bolt.Tx) error {
+func (i *identity) PurgeInternal(_ px.Context, internalID string) {
+	i.withDb(func(db *bolt.DB) {
+		err := db.Update(func(tx *bolt.Tx) error {
 			iid := []byte(internalID)
 			i.removeInternal(tx, iid, false)
 
@@ -308,37 +326,49 @@ func (i *identity) PurgeInternal(internalID string) error {
 			}
 			return nil
 		})
+		if err != nil {
+			panic(err)
+		}
 	})
 }
 
 // Purge all references extending from the internal ID in eras less than the current era
-func (i *identity) PurgeReferences(internalIDPrefix string) error {
-	return i.withDb(func(db *bolt.DB) error {
-		return db.Update(func(tx *bolt.Tx) error {
+func (i *identity) PurgeReferences(_ px.Context, internalIDPrefix string) {
+	i.withDb(func(db *bolt.DB) {
+		err := db.Update(func(tx *bolt.Tx) error {
 			era := i.readMetadata(tx).Era
 			_, err := i.buildReferences(tx, era, internalIDPrefix, true)
 			return err
 		})
+		if err != nil {
+			panic(err)
+		}
 	})
 }
 
 // RemoveExternal moves all mappings to or from this external ID to the garbage bin
-func (i *identity) RemoveExternal(externalID string) error {
-	return i.withDb(func(db *bolt.DB) error {
-		return db.Update(func(tx *bolt.Tx) error {
+func (i *identity) RemoveExternal(_ px.Context, externalID string) {
+	i.withDb(func(db *bolt.DB) {
+		err := db.Update(func(tx *bolt.Tx) error {
 			i.removeExternal(tx, []byte(externalID), true)
 			return nil
 		})
+		if err != nil {
+			panic(err)
+		}
 	})
 }
 
 // RemoveInternal moves all mappings to or from this internal ID to the garbage bin
-func (i *identity) RemoveInternal(internalID string) error {
-	return i.withDb(func(db *bolt.DB) error {
-		return db.Update(func(tx *bolt.Tx) error {
+func (i *identity) RemoveInternal(_ px.Context, internalID string) {
+	i.withDb(func(db *bolt.DB) {
+		err := db.Update(func(tx *bolt.Tx) error {
 			i.removeInternal(tx, []byte(internalID), true)
 			return nil
 		})
+		if err != nil {
+			panic(err)
+		}
 	})
 }
 
@@ -349,10 +379,10 @@ func (i *identity) RemoveInternal(internalID string) error {
 //
 // The tuples are returned in the order they were added to the store. An empty slice is returned when no tuples
 // are found.
-func (i *identity) Search(internalIDPrefix string) (px.List, error) {
+func (i *identity) Search(_ px.Context, internalIDPrefix string) px.List {
 	found := make([]px.Value, 0, 32)
-	err := i.withDb(func(db *bolt.DB) error {
-		return db.View(func(tx *bolt.Tx) error {
+	i.withDb(func(db *bolt.DB) {
+		err := db.View(func(tx *bolt.Tx) error {
 			return tx.Bucket(internalToExternal).ForEach(func(k, v []byte) error {
 				if strings.HasPrefix(string(k), internalIDPrefix) {
 					found = append(found, unmarshalTuple(v).ValueTuple())
@@ -360,20 +390,20 @@ func (i *identity) Search(internalIDPrefix string) (px.List, error) {
 				return nil
 			})
 		})
+		if err != nil {
+			panic(err)
+		}
 	})
-	if err != nil {
-		return nil, err
-	}
-	return sortedValueTuples(found), nil
+	return sortedValueTuples(found)
 }
 
 // Sweep finds all tuples that are keyed by an internalID prefixed by internalIDPrefix and moves those of them that
 // are eligible for garbage collection to the garbage bin.
 //
 // A tuple is considered eligable for GC when its GC era is lower than the current era
-func (i *identity) Sweep(internalIDPrefix string) error {
-	return i.withDb(func(db *bolt.DB) error {
-		return db.Update(func(tx *bolt.Tx) error {
+func (i *identity) Sweep(_ px.Context, internalIDPrefix string) {
+	i.withDb(func(db *bolt.DB) {
+		err := db.Update(func(tx *bolt.Tx) error {
 			era := i.readMetadata(tx).Era
 			prefixes, err := i.buildReferences(tx, era, internalIDPrefix, false)
 			if err != nil {
@@ -398,6 +428,9 @@ func (i *identity) Sweep(internalIDPrefix string) error {
 				return nil
 			})
 		})
+		if err != nil {
+			panic(err)
+		}
 	})
 }
 
@@ -447,10 +480,10 @@ func (i *identity) buildReferences(tx *bolt.Tx, era int64, internalIDPrefix stri
 // Garbage finds all tuples that are keyed by an internalID prefixed by internalIDPrefix that have been moved to the
 // garbage bin. The tuples are returned in the order they were added to the store. An empty slice is returned when no
 // tuples are found.
-func (i *identity) Garbage(internalIDPrefix string) (px.List, error) {
+func (i *identity) Garbage(_ px.Context, internalIDPrefix string) px.List {
 	gs := make([]px.Value, 0, 32)
-	err := i.withDb(func(db *bolt.DB) error {
-		return db.View(func(tx *bolt.Tx) error {
+	i.withDb(func(db *bolt.DB) {
+		err := db.View(func(tx *bolt.Tx) error {
 			era := i.readMetadata(tx).Era
 			prefixes, err := i.buildReferences(tx, era, internalIDPrefix, false)
 			if err != nil {
@@ -468,11 +501,11 @@ func (i *identity) Garbage(internalIDPrefix string) (px.List, error) {
 				return nil
 			})
 		})
+		if err != nil {
+			panic(err)
+		}
 	})
-	if err != nil {
-		return nil, err
-	}
-	return sortedValueTuples(gs), nil
+	return sortedValueTuples(gs)
 }
 
 func (i *identity) removeExternal(tx *bolt.Tx, eid []byte, moveToGarbage bool) {
@@ -516,33 +549,19 @@ func (i *identity) addToGarbage(tx *bolt.Tx, t *tuple) {
 	putInBucket(tx, garbage, []byte(t.ExternalID), marshalTuple(t))
 }
 
-func (i *identity) withDb(df func(*bolt.DB) error) (err error) {
+func (i *identity) withDb(df func(*bolt.DB)) {
 	i.lock.Lock()
 
-	var db *bolt.DB
-	db, err = bolt.Open(i.filename, 0600, &bolt.Options{Timeout: 200 * time.Millisecond})
+	db, err := bolt.Open(i.filename, 0600, nil)
 	if err != nil {
-		return
+		panic(err)
 	}
 
 	defer func() {
-		e2 := db.Close()
+		_ = db.Close()
 		i.lock.Unlock()
-
-		if e := recover(); e != nil {
-			if ie, ok := e.(identityError); ok {
-				// Panic raised within Identity
-				err = ie
-			} else {
-				panic(e)
-			}
-		} else if err == nil {
-			// Propagate error from Close, if any
-			err = e2
-		}
 	}()
-	err = df(db)
-	return
+	df(db)
 }
 
 func (i *identity) readMetadata(tx *bolt.Tx) *storeMeta {
